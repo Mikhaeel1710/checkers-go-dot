@@ -374,6 +374,90 @@ CreatePauseMenu();
 	rulesButton.Pressed += ShowRules;
 
 	menuContent.AddChild(rulesButton);
+	
+	// Match History dialog
+	AcceptDialog historyDialog = new()
+	{
+		Title = "Match History",
+		OkButtonText = "Close"
+	};
+
+	AddChild(historyDialog);
+
+	Button historyButton =
+		CreateMenuButton("Match History");
+
+	historyButton.Pressed += () =>
+	{
+		try
+		{
+			var matches = MatchHistoryStore.Load();
+
+			if (matches.Count == 0)
+			{
+				historyDialog.DialogText =
+					"No completed matches yet.\n\n" +
+					"Finish a game to create your first record.";
+			}
+			else
+			{
+				var text = new System.Text.StringBuilder();
+
+				text.AppendLine(
+					$"Total saved matches: {matches.Count}"
+				);
+
+				text.AppendLine("Most recent matches:\n");
+
+				int firstIndex = Math.Max(
+					0,
+					matches.Count - 5
+				);
+
+				for (int i = matches.Count - 1;
+					 i >= firstIndex;
+					 i--)
+				{
+					MatchRecord match = matches[i];
+
+					text.AppendLine(
+						$"{match.PlayerOneName} vs {match.PlayerTwoName}"
+					);
+
+					text.AppendLine(
+						$"Winner: {match.WinnerName} | " +
+						$"{match.FinishedAt.ToLocalTime():dd MMM yyyy HH:mm}"
+					);
+
+					text.AppendLine(
+						$"Moves: {match.MoveCount} | " +
+						$"Captures: {match.PlayerOneCaptures} - " +
+						$"{match.PlayerTwoCaptures}"
+					);
+
+					text.AppendLine();
+				}
+
+				historyDialog.DialogText = text.ToString();
+			}
+		}
+		catch (Exception exception)
+		{
+			GD.PushError(
+				"Could not load match history: " +
+				exception.Message
+			);
+
+			historyDialog.DialogText =
+				"Unable to load match history.\n" +
+				"Your saved records have not been changed.";
+		}
+
+		historyDialog.PopupCentered();
+	};
+
+	menuContent.AddChild(historyButton);
+
 
 	Button quitButton =
 		CreateMenuButton("Quit");
@@ -1204,14 +1288,13 @@ private void ShowGameOverDialog()
 		turnLabel.Text =
 			$"{GetPlayerName(game.Winner.Value)} wins!";
 
-		turnLabel.AddThemeColorOverride(
-			"font_color",
-			new Color(
-				1.0f,
-				0.82f,
-				0.20f
-			)
-		);
+	turnLabel.AddThemeColorOverride(
+	"font_color",
+	game.Winner.Value == PieceColour.Red
+		? CheckerSquare.RedPieceColour
+		: CheckerSquare.BlackPieceColour
+);
+	
 
 		return;
 	}
@@ -1285,6 +1368,17 @@ private void RecordWinnerScore()
 	{
 		return;
 	}
+
+MatchHistoryStore.TryAppend(new MatchRecord
+{
+	FinishedAt = DateTimeOffset.Now,
+	PlayerOneName = playerOne.Name,
+	PlayerTwoName = playerTwo.Name,
+	WinnerName = GetPlayerName(game.Winner.Value),
+	MoveCount = game.MoveCount,
+	PlayerOneCaptures = game.RedCaptures,
+	PlayerTwoCaptures = game.BlackCaptures
+});
 
 	if (game.Winner ==
 		PieceColour.Red)
