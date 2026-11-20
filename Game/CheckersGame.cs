@@ -52,6 +52,9 @@ public int MoveCount { get; private set; }
 public int RedCaptures { get; private set; }
 
 public int BlackCaptures { get; private set; }
+public int RedKingsPromoted { get; private set; }
+
+public int BlackKingsPromoted { get; private set; }
 
 	public void StartGame()
 	{
@@ -79,6 +82,8 @@ MoveCount = 0;
 
 RedCaptures = 0;
 BlackCaptures = 0;
+RedKingsPromoted = 0;
+BlackKingsPromoted = 0;
 
 PlaceStartingPieces();
 
@@ -485,22 +490,33 @@ public int CountPieces(
 
 	return count;
 }
+
 public void PromotePieceIfNeeded(
 	CheckerPiece piece,
 	int row)
 {
+	// A piece that is already a king must not
+	// be counted as a new promotion.
+	if (piece.IsKing)
+	{
+		return;
+	}
+
 	if (piece.Colour == PieceColour.Red &&
 		row == 0)
 	{
 		piece.IsKing = true;
+		RedKingsPromoted++;
 	}
-
-	if (piece.Colour == PieceColour.Black &&
-		row == BoardSize - 1)
+	else if (piece.Colour == PieceColour.Black &&
+			 row == BoardSize - 1)
 	{
 		piece.IsKing = true;
-	}
+		BlackKingsPromoted++;
+	}		
 }
+
+
 
 public bool CheckForWinner()
 {

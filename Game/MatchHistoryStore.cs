@@ -14,6 +14,8 @@ public sealed class MatchRecord
 	public int MoveCount { get; set; }
 	public int PlayerOneCaptures { get; set; }
 	public int PlayerTwoCaptures { get; set; }
+	public int? PlayerOneKingsPromoted { get; set; }
+public int? PlayerTwoKingsPromoted { get; set; }
 }
 
 public static class MatchHistoryStore

@@ -429,11 +429,29 @@ CreatePauseMenu();
 						$"{match.FinishedAt.ToLocalTime():dd MMM yyyy HH:mm}"
 					);
 
-					text.AppendLine(
-						$"Moves: {match.MoveCount} | " +
-						$"Captures: {match.PlayerOneCaptures} - " +
-						$"{match.PlayerTwoCaptures}"
-					);
+					
+text.AppendLine(
+	$"Moves: {match.MoveCount} | " +
+	$"Captures: {match.PlayerOneCaptures} - " +
+	$"{match.PlayerTwoCaptures}"
+);
+
+string playerOneKings =
+	match.PlayerOneKingsPromoted?.ToString()
+	?? "Not tracked";
+
+string playerTwoKings =
+	match.PlayerTwoKingsPromoted?.ToString()
+	?? "Not tracked";
+
+text.AppendLine(
+	$"Kings promoted: " +
+	$"{match.PlayerOneName} {playerOneKings} | " +
+	$"{match.PlayerTwoName} {playerTwoKings}"
+);
+
+text.AppendLine();
+
 
 					text.AppendLine();
 				}
@@ -458,6 +476,44 @@ CreatePauseMenu();
 
 	menuContent.AddChild(historyButton);
 
+
+	// Player statistics and leaderboard.
+	AcceptDialog leaderboardDialog = new()
+	{
+		Title = "Player Leaderboard",
+		OkButtonText = "Close"
+	};
+
+	AddChild(leaderboardDialog);
+
+	Button leaderboardButton =
+		CreateMenuButton("Leaderboard");
+
+	leaderboardButton.Pressed += () =>
+	{
+		try
+		{
+			leaderboardDialog.DialogText =
+				PlayerLeaderboard.BuildDisplayText(
+					MatchHistoryStore.Load()
+				);
+		}
+		catch (Exception exception)
+		{
+			GD.PushError(
+				"Could not load leaderboard: " +
+				exception.Message
+			);
+
+			leaderboardDialog.DialogText =
+				"Unable to load player statistics.\n" +
+				"Your saved match history has not been changed.";
+		}
+
+		leaderboardDialog.PopupCentered();
+	};
+
+	menuContent.AddChild(leaderboardButton);
 
 	Button quitButton =
 		CreateMenuButton("Quit");
@@ -1377,7 +1433,9 @@ MatchHistoryStore.TryAppend(new MatchRecord
 	WinnerName = GetPlayerName(game.Winner.Value),
 	MoveCount = game.MoveCount,
 	PlayerOneCaptures = game.RedCaptures,
-	PlayerTwoCaptures = game.BlackCaptures
+	PlayerTwoCaptures = game.BlackCaptures,
+	PlayerOneKingsPromoted = game.RedKingsPromoted,
+PlayerTwoKingsPromoted = game.BlackKingsPromoted
 });
 
 	if (game.Winner ==
