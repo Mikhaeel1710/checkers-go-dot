@@ -108,8 +108,12 @@ public override void _Process(double delta)
 	// Delay each computer move, including chained jumps.
 	computerMoveCountdown = 0.55;
 
-	ComputerMove? chosenMove =
-		ComputerOpponent.ChooseEasyMove(game);
+	
+ComputerMove? chosenMove =
+	gameModeSelector.Selected == 2
+		? ComputerOpponent.ChooseMediumMove(game)
+		: ComputerOpponent.ChooseEasyMove(game);
+
 
 	if (!chosenMove.HasValue)
 	{
@@ -808,6 +812,7 @@ gameModeSelector = new OptionButton
 
 gameModeSelector.AddItem("Local Two-Player");
 gameModeSelector.AddItem("Versus Computer (Easy)");
+gameModeSelector.AddItem("Versus Computer (Medium)");
 
 gameModeSelector.Selected = 0;
 
@@ -1659,15 +1664,19 @@ private void BeginMatchFromSetup()
 		);
 
 	
+
 versusComputer =
-	gameModeSelector.Selected == 1;
+	gameModeSelector.Selected != 0;
 
 playerTwo.Name = versusComputer
-	? "Computer (Easy)"
+	? gameModeSelector.Selected == 2
+		? "Computer (Medium)"
+		: "Computer (Easy)"
 	: GetValidPlayerName(
 		playerTwoNameInput.Text,
         "Player 2"
 	);
+
 
 
 	playerOneNameInput.Text =
