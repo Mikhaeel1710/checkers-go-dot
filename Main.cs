@@ -45,6 +45,13 @@ private Label matchScoreLabel = null!;
 
 private OptionButton boardThemeSelector = null!;
 
+private OptionButton gameModeSelector = null!;
+
+private bool versusComputer = false;
+private bool runningComputerMove = false;
+private double computerMoveCountdown = 0.55;
+
+
 private Color lightBoardColour =
 	new Color(0.94f, 0.80f, 0.63f);
 
@@ -71,6 +78,72 @@ private Label matchStatsLabel = null!;
 
 	CreateInterface();
 	StartGame();
+}
+
+public override void _Process(double delta)
+{
+	// Only run the computer in its own game mode.
+	if (!versusComputer ||
+		game.GameOver ||
+		game.CurrentTurn != PieceColour.Black ||
+		mainMenu.Visible ||
+		playerSetup.Visible ||
+		pauseMenu.Visible ||
+		rulesDialog.Visible ||
+		restartDialog.Visible ||
+		mainMenuDialog.Visible ||
+		gameOverDialog.Visible)
+	{
+		computerMoveCountdown = 0.55;
+		return;
+	}
+
+	computerMoveCountdown -= delta;
+
+	if (computerMoveCountdown > 0)
+	{
+		return;
+	}
+
+	// Delay each computer move, including chained jumps.
+	computerMoveCountdown = 0.55;
+
+	ComputerMove? chosenMove =
+		ComputerOpponent.ChooseEasyMove(game);
+
+	if (!chosenMove.HasValue)
+	{
+		GD.PushWarning(
+            "Computer has no available legal move."
+		);
+		return;
+	}
+
+	ComputerMove move = chosenMove.Value;
+
+	runningComputerMove = true;
+
+	try
+	{
+		// A chained capture already has a selected piece.
+		if (!game.MustContinueCapture)
+		{
+			SquarePressed(
+				move.SourceRow,
+				move.SourceColumn
+			);
+		}
+
+		// Reuse the existing gameplay and UI handling.
+		SquarePressed(
+			move.TargetRow,
+			move.TargetColumn
+		);
+	}
+	finally
+	{
+		runningComputerMove = false;
+	}
 }
 
 	public override void _UnhandledInput(
@@ -708,6 +781,44 @@ private void CreatePlayerSetup()
 	setupContent.AddChild(
 		playerTwoNameInput
 	);
+
+Label gameModeLabel = new()
+{
+	Text = "Game Mode",
+
+	HorizontalAlignment =
+		HorizontalAlignment.Center
+};
+
+gameModeLabel.AddThemeFontSizeOverride(
+	"font_size",
+	16
+);
+
+setupContent.AddChild(gameModeLabel);
+
+gameModeSelector = new OptionButton
+{
+	CustomMinimumSize =
+		new Vector2(330, 44),
+
+	FocusMode =
+		Control.FocusModeEnum.None
+};
+
+gameModeSelector.AddItem("Local Two-Player");
+gameModeSelector.AddItem("Versus Computer (Easy)");
+
+gameModeSelector.Selected = 0;
+
+// Player 2's custom name is only used in local mode.
+gameModeSelector.ItemSelected += selectedIndex =>
+{
+	playerTwoNameInput.Editable =
+		selectedIndex == 0;
+};
+
+setupContent.AddChild(gameModeSelector);
 
 	CreateColourControls(setupContent);
 
@@ -1547,17 +1658,26 @@ private void BeginMatchFromSetup()
             "Player 1"
 		);
 
-	playerTwo.Name =
-		GetValidPlayerName(
-			playerTwoNameInput.Text,
-            "Player 2"
-		);
+	
+versusComputer =
+	gameModeSelector.Selected == 1;
+
+playerTwo.Name = versusComputer
+	? "Computer (Easy)"
+	: GetValidPlayerName(
+		playerTwoNameInput.Text,
+        "Player 2"
+	);
+
 
 	playerOneNameInput.Text =
 		playerOne.Name;
 
+	if (!versusComputer)
+{
 	playerTwoNameInput.Text =
 		playerTwo.Name;
+}
 
 	playerSetup.Hide();
 
