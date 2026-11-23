@@ -109,10 +109,15 @@ public override void _Process(double delta)
 	computerMoveCountdown = 0.55;
 
 	
+
 ComputerMove? chosenMove =
-	gameModeSelector.Selected == 2
-		? ComputerOpponent.ChooseMediumMove(game)
-		: ComputerOpponent.ChooseEasyMove(game);
+	gameModeSelector.Selected switch
+	{
+		3 => HardComputerOpponent.ChooseHardMove(game),
+		2 => ComputerOpponent.ChooseMediumMove(game),
+		_ => ComputerOpponent.ChooseEasyMove(game)
+	};
+
 
 
 	if (!chosenMove.HasValue)
@@ -813,6 +818,7 @@ gameModeSelector = new OptionButton
 gameModeSelector.AddItem("Local Two-Player");
 gameModeSelector.AddItem("Versus Computer (Easy)");
 gameModeSelector.AddItem("Versus Computer (Medium)");
+gameModeSelector.AddItem("Versus Computer (Hard)");
 
 gameModeSelector.Selected = 0;
 
@@ -1665,17 +1671,22 @@ private void BeginMatchFromSetup()
 
 	
 
+
 versusComputer =
 	gameModeSelector.Selected != 0;
 
 playerTwo.Name = versusComputer
-	? gameModeSelector.Selected == 2
-		? "Computer (Medium)"
-		: "Computer (Easy)"
+	? (gameModeSelector.Selected switch
+	{
+		3 => "Computer (Hard)",
+		2 => "Computer (Medium)",
+		_ => "Computer (Easy)"
+	})
 	: GetValidPlayerName(
 		playerTwoNameInput.Text,
         "Player 2"
 	);
+
 
 
 
